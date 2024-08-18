@@ -10,7 +10,7 @@ def send_msg(c, u):
     while True:
         try:
             msg = input("Input: ")
-            c.send(msg.encode())
+            c.send(f'<{u}> {msg}'.encode('utf-8'))
         except Exception as e:
             print(e)
             return

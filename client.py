@@ -3,7 +3,7 @@ from socket import *
 from time import sleep
 
 HOST = '127.0.0.1'
-PORT = 2000
+PORT = 20022
 
 
 def send_msg(c, u):
@@ -33,5 +33,6 @@ except:
     exit(0)
 send_thread = threading.Thread(target=send_msg, args=[client, user])
 send_thread.start()
+send_thread.join()
 
 exit(0)

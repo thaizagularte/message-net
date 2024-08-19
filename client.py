@@ -2,7 +2,7 @@ import threading
 from socket import *
 from time import sleep
 
-HOST = '127.0.0.1'
+HOST = '192.168.8.13'
 PORT = 20022
 
 
@@ -14,6 +14,14 @@ def send_msg(c, u):
         except Exception as e:
             print(e)
             return
+
+def recv_msg(c):
+    while True:
+        try:
+            msg = c.recv(1024).decode('utf-8')
+            print(f'{msg}\n')
+        except Exception as e:
+            print(e)
 
 
 
@@ -28,11 +36,16 @@ print("Iniciando Conexão")
 try:
     client.connect((HOST, PORT))
     print(f'Conectado como {user}!')
-except:
+except Exception as e:
+    print(e)
     print("Erro ao conectar\nSaindo", end="")
     exit(0)
 send_thread = threading.Thread(target=send_msg, args=[client, user])
+recv_thread = threading.Thread(target=recv_msg, args=[client])
 send_thread.start()
+recv_thread.start()
 send_thread.join()
+
+secv_thread.join()
 
 exit(0)

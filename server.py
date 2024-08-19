@@ -1,8 +1,9 @@
 
 from socket import *
 import threading
-HOST = '192.168.8.13'
-PORT = 20022
+#HOST = '192.168.8.13'
+HOST = '127.0.0.1'
+PORT = 20023
 clients = []
 
 def msgs(c):

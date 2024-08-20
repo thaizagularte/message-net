@@ -6,26 +6,26 @@ from socket import *
 from datetime import datetime, timezone
 
 
-
-
 @dataclass(slots=True)
 class User:
-    id : Optional[str] = None
-    username : Optional[str] = None
-    messsages : dict = field(default_factory=dict)
+    id: Optional[str] = None
+    username: Optional[str] = None
+    messsages: dict = field(default_factory=dict)
 
     def load_id(self, id: str) -> None:
         if not self.id:
             self.id = id
             print(f"User {self.id} loaded")
-    def add_message(self, sender, data : str) -> None:
+
+    def add_message(self, sender, data: str) -> None:
         if sender not in self.messsages.keys():
             self.messsages[sender] = []
         self.messsages[sender].append(data)
 
+
 @dataclass
 class Client:
-    user : User = User()
+    user: User = User()
     PORT: int = 2024
     HOST: str = '127.0.0.1'
     socket: socket = socket(AF_INET, SOCK_STREAM)
@@ -44,6 +44,7 @@ class Client:
                 print(message)
         except KeyError:
             return
+
     def conn_serv(self) -> bool:
         """Método para iniciar uma tentativa de conexão com o servidor"""
         try:
@@ -57,11 +58,9 @@ class Client:
     def register(self):
         try:
             self.socket.send('01'.encode())
-
-
         except Exception:
             print('Erro ao Registrar')
-            
+
     def conn_user(self):
         print(self.user.id)
         if self.user.id:
@@ -72,12 +71,12 @@ class Client:
             except Exception:
                 print('Erro ao Conectar')
                 return False
-                
+
     def confirm_recv(self, ):
         pass
 
-    def new_msg(self, src_id : str, timestamp : int, data : str):
-        '''
+    def new_msg(self, src_id: str, timestamp: int, data: str):
+        """
         Método de Recebimento das mensagens enviadas, Argumentos:
 
         *src_id* ->  Uma sequência de 13 dígitos representando o originador da mensagem\n
@@ -85,7 +84,7 @@ class Client:
         *timestamp* -> Data e hora de envio da mensagem em formato POSIX
 
         *data* -> Até 218 caractéres de conteúdo que foram enviados
-        '''
+        """
         print('New Message Received')
         self.user.add_message(src_id, f'<{timestamp}> {data}')
 
@@ -109,4 +108,3 @@ class Client:
                     self.user.load_id(user_id)
                 case '06':
                     self.new_msg(src_id=data[2:15], timestamp=int(data[15:28]), data=data[28:])
-

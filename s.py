@@ -76,8 +76,9 @@ class Server:
 
     def forward_msg(self, src_id: str, dst_id: str, timestamp: str, data: str):
         dst_client = self.users[dst_id]
+        print(f'src {src_id}\ndst {dst_id}\ntimestamp {timestamp}\ndata {data}')
         if dst_client in self.online:
-            msg = f'06{src_id}{dst_id}{str(timestamp)}{data}'
+            msg = f'06{src_id}{dst_id}{timestamp}{data}'
             try:
                 dst_client.send(msg.encode())
             except:

@@ -58,8 +58,10 @@ class Client:
     def register(self):
         try:
             self.socket.send('01'.encode())
+            return True
         except Exception:
             print('Erro ao Registrar')
+            return False
 
     def conn_user(self):
         print(self.user.id)
@@ -75,26 +77,33 @@ class Client:
     def confirm_recv(self, ):
         pass
 
-    def new_msg(self, src_id: str, timestamp: int, data: str):
+    def recv_msg(self, src_id: str, timestamp: float, data: str):
         """
         Método de Recebimento das mensagens enviadas, Argumentos:
 
-        *src_id* ->  Uma sequência de 13 dígitos representando o originador da mensagem\n
+        *src_id* ->  Uma seq
+        uência de 13 dígitos representando o originador da mensagem\n
 
         *timestamp* -> Data e hora de envio da mensagem em formato POSIX
 
         *data* -> Até 218 caractéres de conteúdo que foram enviados
         """
-        print('New Message Received')
-        self.user.add_message(src_id, f'<{timestamp}> {data}')
+        print(f'New Message Received from {src_id}')
+        ts = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+        self.user.add_message(src_id, f'<{ts} | {src_id}> {data}')
 
     def send_msg(self, dst_src, data) -> bool:
         if len(data) > 218:
             return False
-        print(self.user.id, dst_src, str(datetime.now(tz=timezone.utc).timestamp()))
-        msg = '05' + self.user.id + dst_src + str(datetime.now(tz=timezone.utc).timestamp()) + data
-        print(msg)
-        self.socket.send(msg.encode())
+        timestamp = int(datetime.now(tz=timezone.utc).timestamp())
+        msg = '05' + self.user.id + dst_src + str(timestamp) + data
+        try:
+            self.socket.send(msg.encode())
+            ts = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+            self.user.add_message(dst_src, f'<{ts} | {self.user.id}> {data}')
+            return True
+        except Exception:
+            return False
 
     def handle_recv(self):
         while True:
@@ -107,4 +116,8 @@ class Client:
                     user_id = data[2:]
                     self.user.load_id(user_id)
                 case '06':
-                    self.new_msg(src_id=data[2:15], timestamp=int(data[15:28]), data=data[28:])
+                    print(data)
+                    self.recv_msg(src_id=data[2:15], timestamp=float(data[15:28]), data=data[28:])
+'''
+06-2696474255762-2790755052171-1724155138.798417oi
+cd___id_src____---id-dst----'''

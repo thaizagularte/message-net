@@ -6,6 +6,9 @@ from socket import *
 from datetime import datetime, timezone
 
 
+def get_ts() -> str:
+    return str(int(datetime.now(tz=timezone.utc).timestamp()))
+
 @dataclass(slots=True)
 class User:
     id: Optional[str] = None
@@ -26,7 +29,7 @@ class User:
 @dataclass
 class Client:
     user: User = User()
-    PORT: int = 2024
+    PORT: int = 19033
     HOST: str = '127.0.0.1'
     socket: socket = socket(AF_INET, SOCK_STREAM)
 
@@ -50,74 +53,148 @@ class Client:
         try:
             self.socket.connect((self.HOST, self.PORT))
             print("Conexão Bem-Sucedida!")
-            return True
+
         except Exception as err:
             print(f'Erro ao conectar: {err}')
-            return False
 
-    def register(self):
+    def request_register(self):
         try:
             self.socket.send('01'.encode())
-            return True
         except Exception:
             print('Erro ao Registrar')
             return False
 
+    def register(self, data):
+        return self.user.load_id(data)
+
     def conn_user(self):
-        print(self.user.id)
         if self.user.id:
             try:
                 self.socket.send(f'03{self.user.id}'.encode())
-                print(f'Usuário {self.user.id} Conectado!')
+                print('Conectado como', self.user.id)
                 return True
             except Exception:
                 print('Erro ao Conectar')
                 return False
+        else:
+            print(self.user.id)
 
     def confirm_recv(self, ):
         pass
+
 
     def recv_msg(self, src_id: str, timestamp: float, data: str):
         """
         Método de Recebimento das mensagens enviadas, Argumentos:
 
-        *src_id* ->  Uma seq
-        uência de 13 dígitos representando o originador da mensagem\n
+        *src_id* ->  Uma sequência de 13 dígitos representando o originador da mensagem\n
 
         *timestamp* -> Data e hora de envio da mensagem em formato POSIX
 
         *data* -> Até 218 caractéres de conteúdo que foram enviados
         """
+
         print(f'New Message Received from {src_id}')
         ts = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
         self.user.add_message(src_id, f'<{ts} | {src_id}> {data}')
 
-    def send_msg(self, dst_src, data) -> bool:
+
+    def send_msg(self, dst_id, data) -> bool:
         if len(data) > 218:
             return False
-        timestamp = int(datetime.now(tz=timezone.utc).timestamp())
-        msg = '05' + self.user.id + dst_src + str(timestamp) + data
+
+        timestamp = get_ts()
+        msg = '05' + self.user.id + dst_id + timestamp + data
         try:
             self.socket.send(msg.encode())
-            ts = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
-            self.user.add_message(dst_src, f'<{ts} | {self.user.id}> {data}')
+            ts = datetime.fromtimestamp(int(timestamp)).strftime('%Y-%m-%d %H:%M:%S')
+            self.user.add_message(dst_id, f'<{ts} | {self.user.id}> {data}')
             return True
+        except Exception as e:
+            print("erro")
+            print(e)
+            return False
+
+    def send_seen(self, src_id):
+        """
+        Método que avisa ao Servidor que o cliente LEU a mensagem recebida
+
+        AÇÃO: notificar servidor que a mensagem RECEBIDA foi lida
+        :return:
+        """
+        timestamp = get_ts()
+        try:
+            self.socket.send(f'08{src_id}{timestamp}'.encode())
+            print()
         except Exception:
             return False
+
+
+    def recv_seen(self, dst_id : str, timestamp : int):
+        """
+        Método que avisa ao CLIENTE que a mensagem ENVIADA foi lida
+
+        AÇÃO: notificar cliente
+        :return:
+        """
+        ts = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+        print(f'Mensagens enviadas para {dst_id} foram lidas às {ts}')
+
+    def create_new(self, members : list):
+        timestamp = get_ts()
+        members_join = ''.join(members[i] for i in range(len(members)))
+        msg = f'10{self.user.id}{timestamp}{members_join}'
+        try:
+            self.socket.send(msg.encode())
+            print('VOcê criou com sucesso o grupo com os membros:')
+            for member in members:
+                print(f'{member}')
+
+        except Exception:
+            print('Erro ao Conectar')
+        
+
+
+
 
     def handle_recv(self):
         while True:
             data = self.socket.recv(1024)
+            if not data:
+                break
             data = data.decode()
             print(data)
             match data[:2]:
                 case '02':
-                    print("Solicitação de Registro concluída!")
-                    user_id = data[2:]
-                    self.user.load_id(user_id)
+                    self.register(data[2:])
                 case '06':
                     print(data)
-                    self.recv_msg(src_id=data[2:15], timestamp=float(data[15:28]), data=data[28:])
-'''
-06-2696474255762-2790755052171-1724155138.798417oi
-cd___id_src____---id-dst----'''
+                    self.recv_msg(src_id=data[2:15], timestamp=int(data[28:38]), data=data[38:])
+                case '07':
+                    print('confirm send')
+                    print(data)
+                case '09':
+                    print('ALERT')
+                    self.recv_seen(dst_id=data[2:15], timestamp=int(data[15:]))
+
+
+    '''
+
+    CLIENT PROTOCOL SEND:
+    COD |                    ACTION                      |   STRUCTURE
+--------|------------------------------------------------|--------------------------------------------------------|
+[✔]  01 | Try Register in Server                         |  [COD(2)]
+[✔]  03 | Try Notify the User is Online                  |  [COD(2)][ID(13)]
+[✔]  05 | Try Send a Message to a other User             |  [COD(2)][SRC(13)][DST(13)][TIMESTAMP(10)][MSG(218)]
+[✔]  08 | Try Notify the User is Seen Message Received   |  [COD(2)][SRC(13)][TIMESTAMP(10)]
+[ ]  10 | Try Create a Group                             |
+    
+    CLIENT PROTOCOL RECEIVE:
+   COD |                    ACTION                      |   STRUCTURE
+--------|------------------------------------------------|--------------------------------------------------------|
+[✔]  02 | Confirm Register and Receive ID                |  [COD(2)][ID(13)]
+[✔]  06 | Receive Message                                |  [COD(2)][SRC(13)][DST(13)][TIMESTAMP(10)][MSG(218)]
+[✔]  07 | Confirm Send Message                           |  [COD(2)][DST(13)][TIMESTAMP(10)]
+[✔]  09 | Receive Seen                                   |  [COD(2)][SRC(13)][TIMESTAMP(10)]
+[ ]  11 | Add in a Group                                 |
+    '''

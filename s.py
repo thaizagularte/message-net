@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from random import randint
+from random import randint, random
 from socket import *
 from typing import Optional, List
 import threading
@@ -15,6 +15,7 @@ class Server:
     PORT: int = 19033
     users: dict = field(default_factory=dict)
     online: dict = field(default_factory=dict)
+    grupos: dict = field(default_factory=dict)
     server: socket = socket(AF_INET, SOCK_STREAM)
 
     def __del__(self):
@@ -128,12 +129,21 @@ class Server:
         print(f'[SEEN][{src_id}][{timestamp}]')
         return '[09]' + self.warn_seen_to(client_socket=client, src_id=src_id, timestamp=timestamp)
 
-    def new_group(self):
-        """
+    def new_group(self, src_id,timestamp,members):
+        # src_id - criador  members - id dos membros
+        id_length = 13
+        ids = [members[i:i+id_length] for i in range(0, len(members), id_length)]
+        id_group = random.choices('0123456789', k=13)
+        print(f'11{id_group}{timestamp}{members}')
+        msg = f'11{id_group}{timestamp}{members}'
+        try:
+            for member in ids:
+                client_socket = self.users[member] 
+                client_socket.send(msg.encode())
+        except:
+            print('Erro ao criar grupo')
 
-        :return:
-        """
-
+        
 
     def handle_request(self, client_socket: socket, data: str):
         print('a')
@@ -147,6 +157,9 @@ class Server:
                 return '[SEND]' + self.forward_msg(src_id=data[2:15], dst_id=data[15:28], timestamp=data[28:38], data=data[38:])
             case '08':
                 return self.seen_from(client=client_socket, src_id=data[2:15], timestamp=data[15:])
+            case '10':
+                print('Criando o grupo lado servidor')
+                return self.new_group(src_id=data[2:15], timestamp=data[15:25], members=data[25:])
             case other:
                 print('oi', data[:2],)
                 return

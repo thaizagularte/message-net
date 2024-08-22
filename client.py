@@ -52,6 +52,6 @@ send_thread.start()
 recv_thread.start()
 send_thread.join()
 
-secv_thread.join()
+recv_thread.join()
 
 exit(0)

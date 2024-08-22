@@ -28,10 +28,10 @@ class User:
 
 @dataclass
 class Client:
-    user: User = User()
+    user: User = field(default_factory=User)
     PORT: int = 19033
     HOST: str = '127.0.0.1'
-    socket: socket = socket(AF_INET, SOCK_STREAM)
+    socket = socket(AF_INET, SOCK_STREAM)
 
     def __del__(self):
         self.socket.close()
@@ -140,13 +140,14 @@ class Client:
         ts = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
         print(f'Mensagens enviadas para {dst_id} foram lidas às {ts}')
 
-    def create_new(self, members : list):
+    def create_group(self, members : list):
         timestamp = get_ts()
+        members.insert(0, self.user.id)
         members_join = ''.join(members[i] for i in range(len(members)))
         msg = f'10{self.user.id}{timestamp}{members_join}'
         try:
             self.socket.send(msg.encode())
-            print('VOcê criou com sucesso o grupo com os membros:')
+            print('Você criou com sucesso o grupo com os membros:')
             for member in members:
                 print(f'{member}')
 
@@ -176,6 +177,10 @@ class Client:
                 case '09':
                     print('ALERT')
                     self.recv_seen(dst_id=data[2:15], timestamp=int(data[15:]))
+                case '11':    
+                    print(f'Servidor criou o grupo id: {data[2:15]}')
+                    
+                    
 
 
     '''

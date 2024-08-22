@@ -1,5 +1,12 @@
 Trabalho de Redes de Computadores para simular um chat de conversas:
 
+    EXECUTAR
+    - Se necessário instale a versão python 3.10
+    - Depois inicie o servidor com o comando python s.py
+    - E para iniciar a interface comando python main.py
+
+0790528059800
+
     CLIENT PROTOCOL SEND:
     COD |                    ACTION                      |   STRUCTURE
 --------|------------------------------------------------|--------------------------------------------------------|

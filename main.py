@@ -23,7 +23,7 @@ def menu():
 
     while True:
         print("### Menu ###")
-        choice = input("[1] Mandar mensagem\n[2] Abrir Conversa\nInput: ")
+        choice = input("[1] Mandar mensagem\n[2] Abrir Conversa\n [3] Criar grupo\n[4]Abrir grupo\nInput: ")
         match choice:
             case "1":
                 dst = input("Digite o ID do destino: ")
@@ -33,6 +33,18 @@ def menu():
                 contact_id = input('De quem? ')
                 c.send_seen(contact_id)
                 c.load_messages(contact_id)
+            case "3":
+                add = True
+                members = []
+                while add:
+                    member = input('Digite o id do membro [0]Sair: ')
+                    if(member == '0'):
+                        add=False
+                    else:
+                        members.append(member)
+                c.create_group(members)
+            case "4":
+                pass
 
 
 
